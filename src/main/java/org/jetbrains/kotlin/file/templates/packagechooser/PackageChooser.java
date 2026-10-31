@@ -30,8 +30,8 @@ public class PackageChooser {
     
     public static TargetChooserPanel createPackageChooser(Project project, SourceGroup[] folders, 
         WizardDescriptor.Panel<WizardDescriptor> bottomPanel, String type) {
-        if (folders.length == 0) {
-            throw new IllegalArgumentException("No folders selected");
+        if (folders == null || folders.length == 0) {
+            return null;
         }
         return new TargetChooserPanel(project, folders, bottomPanel, Type.FILE, false, type);
     }

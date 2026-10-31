@@ -46,7 +46,13 @@ import org.openide.loaders.DataFolder;
 import org.openide.loaders.DataObject;
 import org.openide.util.HelpCtx;
 
+import java.util.HashSet;
+import org.netbeans.spi.project.support.GenericSources;
+import org.openide.filesystems.FileUtil;
+
 public abstract class KtDefaultWizardIterator implements WizardDescriptor.InstantiatingIterator<WizardDescriptor> {
+
+    private static final String SOURCE_TYPE_KOTLIN = "kotlin"; // NOI18N
 
     private final String type;
 
@@ -60,33 +66,101 @@ public abstract class KtDefaultWizardIterator implements WizardDescriptor.Instan
     private TargetChooserPanel packageChooserPanel;
     private List<WizardDescriptor.Panel<WizardDescriptor>> panels;
 
+    private SourceGroup[] getSourceGroups(Project project) {
+        if (project == null) {
+            return new SourceGroup[0];
+        }
+        Sources sources = ProjectUtils.getSources(project);
+        List<SourceGroup> result = new ArrayList<>();
+        Set<FileObject> seenRoots = new HashSet<>();
+
+        if (sources != null) {
+            // 1. Query "kotlin" source groups (e.g. from NetBeans Gradle or Kotlin project extensions)
+            SourceGroup[] kotlinGroups = sources.getSourceGroups(SOURCE_TYPE_KOTLIN);
+            if (kotlinGroups != null) {
+                for (SourceGroup sg : kotlinGroups) {
+                    if (sg != null && sg.getRootFolder() != null && seenRoots.add(sg.getRootFolder())) {
+                        result.add(sg);
+                    }
+                }
+            }
+
+            // 2. Query "java" source groups
+            SourceGroup[] javaGroups = sources.getSourceGroups(JavaProjectConstants.SOURCES_TYPE_JAVA);
+            if (javaGroups != null) {
+                for (SourceGroup sg : javaGroups) {
+                    if (sg != null && sg.getRootFolder() != null && seenRoots.add(sg.getRootFolder())) {
+                        result.add(sg);
+                    }
+                }
+            }
+        }
+
+        // 3. Check standard folder locations on disk if not already registered
+        FileObject prjDir = project.getProjectDirectory();
+        if (prjDir != null) {
+            String[] commonPaths = {
+                "src/main/kotlin",
+                "src/main/java",
+                "src/test/kotlin",
+                "src/test/java",
+                "src"
+            };
+            for (String path : commonPaths) {
+                FileObject fo = prjDir.getFileObject(path);
+                if (fo != null && fo.isFolder() && seenRoots.add(fo)) {
+                    String displayName = path;
+                    if (path.startsWith("src/main/")) {
+                        displayName = "Source Packages [" + path.substring("src/main/".length()) + "]";
+                    } else if (path.startsWith("src/test/")) {
+                        displayName = "Test Packages [" + path.substring("src/test/".length()) + "]";
+                    }
+                    result.add(GenericSources.group(project, fo, path, displayName, null, null));
+                }
+            }
+        }
+
+        // 4. If still empty, try to ensure src/main/kotlin exists if project dir exists
+        if (result.isEmpty() && prjDir != null) {
+            try {
+                FileObject srcMainKotlin = FileUtil.createFolder(prjDir, "src/main/kotlin");
+                if (srcMainKotlin != null && seenRoots.add(srcMainKotlin)) {
+                    result.add(GenericSources.group(project, srcMainKotlin, "src/main/kotlin", "Source Packages [kotlin]", null, null));
+                }
+            } catch (IOException ignored) {
+            }
+        }
+
+        return result.toArray(new SourceGroup[result.size()]);
+    }
+
     private List<WizardDescriptor.Panel<WizardDescriptor>> getPanels() {
         if (panels == null) {
             Project project = Templates.getProject(wizard);
-            SourceGroup[] groups;
+            SourceGroup[] groups = getSourceGroups(project);
             
-            if (project == null) {
-                List<SourceGroup> sourceGroups = Lists.newArrayList();
-                                        
+            if (groups.length == 0 && project == null) {
                 for (Project proj : OpenProjects.getDefault().getOpenProjects()) {
-                    Sources sources = ProjectUtils.getSources(proj);
-                    if (sources != null) {
-                        sourceGroups.addAll(Arrays.asList(
-                                sources.getSourceGroups(JavaProjectConstants.SOURCES_TYPE_JAVA)));
+                    groups = getSourceGroups(proj);
+                    if (groups.length > 0) {
                         project = proj;
                         break;
                     }
-                                    
                 }
-                groups = sourceGroups.toArray(new SourceGroup[sourceGroups.size()]);
-            } else {
-                Sources sources = ProjectUtils.getSources(project);
-                groups = sources.getSourceGroups(JavaProjectConstants.SOURCES_TYPE_JAVA);
             }
-            packageChooserPanel = PackageChooser.createPackageChooser(project, groups, new KtWizardPanel(), type + " name");
-            
+
             panels = new ArrayList<>();
-            panels.add(packageChooserPanel);
+            if (groups.length > 0) {
+                packageChooserPanel = PackageChooser.createPackageChooser(project, groups, new KtWizardPanel(), type + " name");
+            }
+            if (packageChooserPanel != null) {
+                panels.add(packageChooserPanel);
+            } else {
+                SourceGroup[] generic = (project != null && ProjectUtils.getSources(project) != null)
+                        ? ProjectUtils.getSources(project).getSourceGroups(Sources.TYPE_GENERIC)
+                        : new SourceGroup[0];
+                panels.add(Templates.createSimpleTargetChooser(project, generic));
+            }
             String[] steps = createSteps();
             for (int i = 0; i < panels.size(); i++) {
                 Component c = panels.get(i).getComponent();

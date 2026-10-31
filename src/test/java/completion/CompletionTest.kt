@@ -69,4 +69,6 @@ class CompletionTest : KotlinTestCase("Completion test", "completion") {
 
     fun testNonImportedPrivate() = doTest("checkNonImportedPrivate.kt")
         
+    fun testEnum() = doTest("checkEnumCompletion.kt", listOf("FIRST", "SECOND", "THIRD"))
+        
 }

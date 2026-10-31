@@ -27,6 +27,21 @@ import org.netbeans.api.java.source.Task
 import org.netbeans.api.java.source.TypeMirrorHandle
 import org.netbeans.api.project.Project
 
+fun hasTypeVariable(type: javax.lang.model.type.TypeMirror?): Boolean {
+    if (type == null) return false
+    return when (type.kind) {
+        javax.lang.model.type.TypeKind.TYPEVAR -> true
+        javax.lang.model.type.TypeKind.DECLARED -> (type as DeclaredType).typeArguments.any { hasTypeVariable(it) }
+        javax.lang.model.type.TypeKind.ARRAY -> hasTypeVariable((type as ArrayType).componentType)
+        javax.lang.model.type.TypeKind.WILDCARD -> {
+            val extendsBound = (type as WildcardType).extendsBound
+            val superBound = type.superBound
+            (extendsBound != null && hasTypeVariable(extendsBound)) || (superBound != null && hasTypeVariable(superBound))
+        }
+        else -> false
+    }
+}
+
 class TypeNameSearcher(val handle: TypeMirrorHandle<*>) : Task<CompilationController> {
 
     lateinit var name: String
@@ -34,8 +49,12 @@ class TypeNameSearcher(val handle: TypeMirrorHandle<*>) : Task<CompilationContro
     override fun run(info: CompilationController) {
         info.toResolvedPhase()
 
-        val type = handle.resolve(info) ?: throw UnsupportedOperationException("$handle doesn't exist'")
-        name = type.toString()
+        val type = try {
+            handle.resolve(info)
+        } catch (t: Throwable) {
+            null
+        }
+        name = type?.toString() ?: ""
     }
 }
 
@@ -47,10 +66,17 @@ class BoundSearcher(val handle: TypeMirrorHandle<*>,
     override fun run(info: CompilationController) {
         info.toResolvedPhase()
 
-        val type = handle.resolve(info) ?: return
+        val type = try {
+            handle.resolve(info)
+        } catch (t: Throwable) {
+            null
+        } ?: return
         val boundMirror = (type as WildcardType).extendsBound ?: type.superBound
 
-        bound = if (boundMirror != null) NetBeansJavaType.create(TypeMirrorHandle.create(boundMirror), project) else null
+        bound = if (boundMirror != null) {
+            val target = if (hasTypeVariable(boundMirror)) info.types.erasure(boundMirror) else boundMirror
+            NetBeansJavaType.create(TypeMirrorHandle.create(target), project)
+        } else null
     }
 }
 
@@ -61,7 +87,11 @@ class IsExtendsSearcher(val handle: TypeMirrorHandle<*>) : Task<CompilationContr
     override fun run(info: CompilationController) {
         info.toResolvedPhase()
 
-        val type = handle.resolve(info) ?: return
+        val type = try {
+            handle.resolve(info)
+        } catch (t: Throwable) {
+            null
+        } ?: return
         isExtends = (type as WildcardType).extendsBound != null
     }
 }
@@ -74,7 +104,11 @@ class ComponentTypeSearcher(val handle: TypeMirrorHandle<*>,
     override fun run(info: CompilationController) {
         info.toResolvedPhase()
 
-        val type = handle.resolve(info) ?: throw UnsupportedOperationException("Component type not found")
+        val type = try {
+            handle.resolve(info)
+        } catch (t: Throwable) {
+            null
+        } ?: throw UnsupportedOperationException("Component type not found")
         val componentTypeHandle = TypeMirrorHandle.create((type as ArrayType).componentType)
         componentType = NetBeansJavaType.create(componentTypeHandle, project)
     }
@@ -87,7 +121,11 @@ class IsRawSearcher(val handle: TypeMirrorHandle<*>) : Task<CompilationControlle
     override fun run(info: CompilationController) {
         info.toResolvedPhase()
 
-        val type = handle.resolve(info) as? DeclaredType ?: return
+        val type = try {
+            handle.resolve(info)
+        } catch (t: Throwable) {
+            null
+        } as? DeclaredType ?: return
         val element = type.asElement() as TypeElement
         if (element.typeParameters.isEmpty()) return
         
@@ -103,9 +141,16 @@ class TypeArgumentsSearcher(val handle: TypeMirrorHandle<*>,
     override fun run(info: CompilationController) {
         info.toResolvedPhase()
         
-        val type = handle.resolve(info) ?: return
+        val type = try {
+            handle.resolve(info)
+        } catch (t: Throwable) {
+            null
+        } ?: return
         val args = (type as DeclaredType).typeArguments
-                .map { NetBeansJavaType.create(TypeMirrorHandle.create(it), project) }
+                .map { 
+                    val target = if (hasTypeVariable(it)) info.types.erasure(it) else it
+                    NetBeansJavaType.create(TypeMirrorHandle.create(target), project) 
+                }
         typeArguments.addAll(args)
     }
 }

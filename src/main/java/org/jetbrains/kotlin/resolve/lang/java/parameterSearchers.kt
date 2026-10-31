@@ -71,7 +71,26 @@ class ElemHandleSearcher(private val typeHandle: TypeMirrorHandle<*>,
     override fun run(info: CompilationController) {
         info.toResolvedPhase()
 
-        val mirror = typeHandle.resolve(info) as? TypeVariable ?: throw UnsupportedOperationException("Cpuldn't resolve ${typeHandle}'")
+        try {
+            val getElementHandleMethod = TypeMirrorHandle::class.java.getDeclaredMethod("getElementHandle")
+            getElementHandleMethod.isAccessible = true
+            val eh = getElementHandleMethod.invoke(typeHandle) as? org.netbeans.api.java.source.ElementHandle<TypeParameterElement>
+            if (eh != null) {
+                val elem = eh.resolve(info)
+                if (elem != null) {
+                    elemHandle = ElemHandle.create(elem, project)
+                    return
+                }
+            }
+        } catch (t: Throwable) {
+            // fallback
+        }
+
+        val mirror = try {
+            typeHandle.resolve(info) as? TypeVariable
+        } catch (t: Throwable) {
+            null
+        } ?: throw UnsupportedOperationException("Couldn't resolve ${typeHandle}")
         elemHandle = ElemHandle.create(mirror.asElement() as TypeParameterElement, project)
     }
 }
@@ -85,7 +104,9 @@ class UpperBoundsSearcher(val handle: ElemHandle<*>, val project: Project) : Tas
 
         val elem = handle.resolve(info) ?: return
         val type = (elem as TypeParameterElement).asType()
-        upperBounds.add(NetBeansJavaClassifierType(TypeMirrorHandle.create((type as TypeVariable).upperBound), project))
+        val upperBound = (type as TypeVariable).upperBound
+        val targetBound = if (hasTypeVariable(upperBound)) info.types.erasure(upperBound) else upperBound
+        upperBounds.add(NetBeansJavaClassifierType(TypeMirrorHandle.create(targetBound), project))
     }
 }
 
@@ -97,8 +118,16 @@ class Equals(val handle: TypeMirrorHandle<*>,
     override fun run(info: CompilationController) {
         info.toResolvedPhase()
 
-        val type = handle.resolve(info) as? TypeVariable ?: return
-        val type2 = handle2.resolve(info) as? TypeVariable ?: return
+        val type = try {
+            handle.resolve(info) as? TypeVariable
+        } catch (t: Throwable) {
+            null
+        } ?: return
+        val type2 = try {
+            handle2.resolve(info) as? TypeVariable
+        } catch (t: Throwable) {
+            null
+        } ?: return
 
         equals = type.asElement() == type2.asElement()
     }
@@ -112,8 +141,16 @@ class TypeMirrorHandleEquals(val handle: TypeMirrorHandle<*>,
     override fun run(info: CompilationController) {
         info.toResolvedPhase()
         
-        val type = handle.resolve(info) ?: return
-        val type2 = handle2.resolve(info) ?: return
+        val type = try {
+            handle.resolve(info)
+        } catch (t: Throwable) {
+            null
+        } ?: return
+        val type2 = try {
+            handle2.resolve(info)
+        } catch (t: Throwable) {
+            null
+        } ?: return
         
         equals = type == type2
     }

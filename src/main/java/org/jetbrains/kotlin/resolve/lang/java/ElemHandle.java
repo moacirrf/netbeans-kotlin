@@ -39,7 +39,13 @@ public class ElemHandle<T extends Element> {
     private ElemHandle(T element, Project project) {
         kind = element.getKind();
         this.project = project;
-        if (kind == ElementKind.PARAMETER || kind == ElementKind.TYPE_PARAMETER) {
+        if (kind == ElementKind.TYPE_PARAMETER) {
+            try {
+                handle = ElementHandle.create(element);
+            } catch (Exception e) {
+                typeHandle = TypeMirrorHandle.create(element.asType());
+            }
+        } else if (kind == ElementKind.PARAMETER) {
             typeHandle = TypeMirrorHandle.create(element.asType());
         } else {
             handle = ElementHandle.create(element);
@@ -61,12 +67,23 @@ public class ElemHandle<T extends Element> {
     }
     
     private Element resolveTypeMirror(CompilationInfo compilationInfo) {
-        TypeMirror type = typeHandle.resolve(compilationInfo);
+        if (typeHandle == null) {
+            return null;
+        }
+        TypeMirror type = null;
+        try {
+            type = typeHandle.resolve(compilationInfo);
+        } catch (Throwable t) {
+            return null;
+        }
         if (type == null) {
             return null;
         }
         
-        return ((TypeVariable) type).asElement();
+        if (type instanceof TypeVariable) {
+            return ((TypeVariable) type).asElement();
+        }
+        return compilationInfo.getTypes().asElement(type);
     }
     
     public Element resolve (final CompilationInfo compilationInfo) {
