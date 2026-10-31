@@ -81,7 +81,7 @@ public class KotlinBuildExtender {
         
         DefaultElement prop = new DefaultElement("property");
         prop.addAttribute("name", "kotlin.lib");
-        prop.addAttribute("value", ProjectUtils.KT_HOME + "lib");
+        prop.addAttribute("value", ProjectUtils.KT_HOME != null ? ProjectUtils.KT_HOME + "lib" : "");
         
         List content = document.getRootElement().content();
         if (content != null ) {
