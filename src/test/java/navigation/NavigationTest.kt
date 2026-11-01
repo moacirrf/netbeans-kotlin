@@ -39,10 +39,10 @@ class NavigationTest : KotlinTestCase("Navigation test", "navigation") {
         assertEquals(expectedOffset, navigationData.second)
     }
 
-    fun tstNavigationToFunction() = doTest("checkNavigationToFunction.kt", "functionToNavigate.kt")
+    fun testNavigationToFunction() = doTest("checkNavigationToFunction.kt", "functionToNavigate.kt")
 
-    fun tstNavigationToClass() = doTest("checkNavigationToClass.kt", "KotlinClass.kt")
+    fun testNavigationToClass() = doTest("checkNavigationToClass.kt", "KotlinClass.kt")
 
-    fun tstNavigationToVariable() = doTest("checkNavigationToVariable.kt")
+    fun testNavigationToVariable() = doTest("checkNavigationToVariable.kt")
     
 }
