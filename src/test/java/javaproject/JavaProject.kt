@@ -28,7 +28,7 @@ object JavaProject : NbTestCase("Java project") {
     }
 
     private fun createJavaProject(): Project {
-        return ProjectManager.getDefault().findProject(JavaProjectUnzipper.INSTANCE.getTestProject())
+        return ProjectManager.getDefault().findProject(JavaProjectUnzipper.INSTANCE.getTestProject())!!
     }
 
     private fun createMockLookup() {
