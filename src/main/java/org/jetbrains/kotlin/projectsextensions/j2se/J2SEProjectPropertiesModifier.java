@@ -51,10 +51,13 @@ public class J2SEProjectPropertiesModifier {
     private String[] getModifiedClasspathProperty(EditableProperties editableProperties, String str) {
         List<String> classpath = new ArrayList<>();
         boolean hasKotlincClasspath = false;
-        for (String item : Arrays.asList(editableProperties.getProperty(str).split(":"))) {
-            classpath.add(item + ":");
-            if (item.equals("${kotlinc.classpath}")) {
-                hasKotlincClasspath = true;
+        String raw = editableProperties.getProperty(str);
+        if (raw != null) {
+            for (String item : Arrays.asList(raw.split(":"))) {
+                classpath.add(item + ":");
+                if (item.equals("${kotlinc.classpath}")) {
+                    hasKotlincClasspath = true;
+                }
             }
         }
         if (!hasKotlincClasspath) {
@@ -82,8 +85,11 @@ public class J2SEProjectPropertiesModifier {
             editableProperties.load(input);
             editableProperties.setProperty("run.classpath", getModifiedClasspathProperty(editableProperties, "run.classpath"));
             editableProperties.setProperty("javac.test.classpath", getModifiedClasspathProperty(editableProperties, "javac.test.classpath"));
-            editableProperties.setProperty("file.reference.kotlin-stdlib.jar", KotlinClasspath.INSTANCE.getKotlinBootClasspath());
-            editableProperties.setProperty("kotlinc.classpath", "${file.reference.kotlin-stdlib.jar}");
+            String bootClasspath = KotlinClasspath.INSTANCE.getKotlinBootClasspath();
+            if (bootClasspath != null && !bootClasspath.isEmpty()) {
+                editableProperties.setProperty("file.reference.kotlin-stdlib.jar", bootClasspath);
+                editableProperties.setProperty("kotlinc.classpath", "${file.reference.kotlin-stdlib.jar}");
+            }
             input.close();
             OutputStream out = new BufferedOutputStream(new FileOutputStream(projectProps.getPath()));
             out.write("".getBytes());

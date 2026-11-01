@@ -165,6 +165,19 @@
                     <attr name="requireProject" boolvalue="true"/>
                 </file>
             </folder>
+            <folder name="KotlinAnt">
+                <attr name="displayName" bundlevalue="org.jetbrains.kotlin.Bundle#Templates/Project/KotlinAnt"/>
+                <attr name="position" intvalue="350"/>
+                <file name="KotlinAntApp">
+                    <attr name="template" boolvalue="true"/>
+                    <attr name="position" intvalue="100"/>
+                    <attr name="displayName" bundlevalue="org.jetbrains.kotlin.Bundle#Templates/Project/KotlinAnt/KotlinAntApp"/>
+                    <attr name="iconBase" stringvalue="org/jetbrains/kotlin/kt.png"/>
+                    <attr name="instantiatingWizardURL" urlvalue="nbresloc:/org/jetbrains/kotlin/project/templates/KotlinAntAppDescription.html"/>
+                    <attr name="instantiatingIterator" newvalue="org.jetbrains.kotlin.project.templates.KotlinAntProjectWizardIterator"/>
+                    <attr name="requireProject" boolvalue="true"/>
+                </file>
+            </folder>
         </folder>
     </folder>
 
