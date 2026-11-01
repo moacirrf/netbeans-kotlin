@@ -119,11 +119,13 @@ private fun getJavaRefactoringMapForProperty(searchingElement: KtProperty,
                                              addToRefactoringMap: (FileObject, OffsetRange, String) -> Unit) {
     val name = searchingElement.name ?: return
     
-    val getterName = "get${name.capitalize()}"
-    val setterName = "set${name.capitalize()}"
+    val capName = name.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
+    val capNewName = newName.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
+    val getterName = "get$capName"
+    val setterName = "set$capName"
     
-    val newGetterName = "get${newName.capitalize()}"
-    val newSetterName = "set${newName.capitalize()}"
+    val newGetterName = "get$capNewName"
+    val newSetterName = "set$capNewName"
     
     val getter = getClassMethod(searchingElement, project, getterName)
     val setter = getClassMethod(searchingElement, project, setterName, 1)
