@@ -276,8 +276,6 @@ fun CallTypeAndReceiver<*, *>.receiverTypesWithIndex(
         is CallTypeAndReceiver.ANNOTATION,
         is CallTypeAndReceiver.UNKNOWN ->
             return null
-
-        else -> throw RuntimeException() //TODO: see KT-9394
     }
 
     val receiverValues = if (receiverExpression != null) {

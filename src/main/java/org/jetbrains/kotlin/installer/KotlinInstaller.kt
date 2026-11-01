@@ -54,7 +54,6 @@ class KotlinInstaller : Yenta() {
                                 val currentFile = dataObject.primaryFile
                                 if (currentFile != null) {
                                     if (currentFile.mimeType == "text/x-kt") {
-                                        checkUpdates()
                                         checkProjectConfiguration(currentFile)
                                     }
                                     if (currentFile.mimeType == "text/x-java") {
@@ -80,10 +79,6 @@ class KotlinInstaller : Yenta() {
     private fun checkProjectConfiguration(file: FileObject) {
         val project = ProjectUtils.getKotlinProjectForFileObject(file) ?: return
         if (project.isMavenProject()) MavenHelper.configure(project)
-    }
-    
-    private fun checkUpdates() {
-        if (!KotlinUpdater.updated) KotlinUpdater.checkUpdates()
     }
     
 }

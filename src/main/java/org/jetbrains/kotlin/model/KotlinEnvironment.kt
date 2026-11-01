@@ -57,7 +57,6 @@ import org.jetbrains.kotlin.log.KotlinLogger
 import org.jetbrains.kotlin.resolve.BuiltInsReferenceResolver
 import org.jetbrains.kotlin.resolve.CodeAnalyzerInitializer
 import org.jetbrains.kotlin.resolve.KotlinCacheServiceImpl
-import org.jetbrains.kotlin.resolve.KotlinSourceIndex
 import org.jetbrains.kotlin.resolve.jvm.modules.JavaModuleResolver
 import org.jetbrains.kotlin.resolve.lang.kotlin.NetBeansVirtualFileFinderFactory
 import org.jetbrains.kotlin.utils.KotlinImportInserterHelper
@@ -135,7 +134,6 @@ class KotlinEnvironment private constructor(kotlinProject: NBProject, disposable
             
             registerService(KotlinLightClassManager::class.java, KotlinLightClassManager(kotlinProject))
             registerService(BuiltInsReferenceResolver::class.java, BuiltInsReferenceResolver(project))
-            registerService(KotlinSourceIndex::class.java, KotlinSourceIndex())
             registerService(KotlinCacheService::class.java, KotlinCacheServiceImpl(project, kotlinProject))
             val virtualFileFinderFactory = NetBeansVirtualFileFinderFactory(kotlinProject)
             registerService(VirtualFileFinderFactory::class.java, virtualFileFinderFactory)
