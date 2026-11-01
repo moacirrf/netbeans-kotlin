@@ -16,25 +16,9 @@
  *******************************************************************************/
 package org.jetbrains.kotlin.bundledcompiler;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipInputStream;
-import org.jetbrains.kotlin.log.KotlinLogger;
-import org.openide.filesystems.FileLock;
-import org.openide.filesystems.FileObject;
-import org.openide.filesystems.FileUtil;
-import org.openide.modules.Places;
-
 public class BundledCompiler {
 
     public static final String KOTLIN_VERSION = "2.4.21";
     public static final String MAVEN_KOTLIN_VERSION = "2.4.21";
-    
-    public static void getKotlinc() {
-        // Modern Kotlin plugin uses Maven/Gradle dependencies or system Kotlin compiler.
-    }
-    
+
 }
